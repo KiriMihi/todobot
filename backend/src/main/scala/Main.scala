@@ -2,9 +2,12 @@ import Config.DbConfig
 import PageError.{ConfigurationError, MissingBotToken}
 import canoe.api.{TelegramClient => CanoeClient}
 import cats.effect.{Blocker, Resource}
+import cats.syntax.either._
 import doobie.hikari.HikariTransactor
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
+import pureconfig._
+import pureconfig.generic.auto._
 import zio._
 import zio.blocking.Blocking
 import zio.console.putStrLn
@@ -12,14 +15,15 @@ import zio.interop.catz._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits
+
 object Main extends zio.App {
   override def run(args: List[String]): ZIO[ZEnv, Nothing, Int] = {
     val program = for {
       token <- telegramBotToken orElse UIO.succeed("")
-      //config <-
+      config <- readConfig
       http4sClient <- makeHttpClient
       canoeClient <- makeCanoeClient(token)
-      // transactor <- makeTransactor(config )
+      // transactor <- makeTransactor(config)
 
     } yield ()
 
@@ -28,9 +32,16 @@ object Main extends zio.App {
       _ => ZIO.succeed(0)
     )
   }
-//
-//    private def readConfig: IO[ConfigurationError, Config] =
-//      ZIO.fromEither(ConfigSource.default)default
+
+  // TODO: move to a separate class
+  final case class BackendConfig(connectionString: String)
+
+  private def readConfig =
+    ZIO.fromEither {
+      ConfigSource.default
+        .load[BackendConfig]
+        .leftMap(errors => ConfigurationError(errors.prettyPrint()))
+    }
 
   private def makeHttpClient: UIO[TaskManaged[Client[Task]]] =
     ZIO.runtime[Any].map { implicit rts =>

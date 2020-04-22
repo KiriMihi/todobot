@@ -1,22 +1,23 @@
 import sbt._
 import Settings._
 
-lazy val domain = project
+lazy val domain = (project in file("domain"))
   .settings(commonSettings)
 
-lazy val storage = project
+lazy val storage = (project in file("storage"))
   .settings(commonSettings)
   .settings(libraryDependencies ++= storageDependencies)
   .dependsOn(domain)
 
-lazy val service = project
+lazy val service = (project in file("service"))
   .settings(commonSettings)
   .settings(libraryDependencies ++= serviceDependencies)
   .settings(higherKinds)
   .dependsOn(storage)
 
-lazy val backend = project
+lazy val backend = (project in file("backend"))
   .settings(commonSettings)
+  .settings(libraryDependencies ++= backendDependencies)
   .dependsOn(service)
 
 
