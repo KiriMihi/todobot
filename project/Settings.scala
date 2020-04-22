@@ -25,10 +25,11 @@ object Settings {
       logLevel := Level.Info,
       version := (version in ThisBuild).value,
       scalafmtOnCompile := true,
+    )
   }
 
   val storageDependencies = List(zio, zioCats) ++ doobie
-  val serviceDependencies = List(zioCats, zioMacros, zioTest, zioTestSbt, fs2Core, canoe) ++ circe
+  val serviceDependencies = List(zioCats, zio, zioTest, zioTestSbt, fs2Core, canoe) ++ circe
 
   val backendDependencies = List(flyway, pureconfig, h2)
   val higherKinds = addCompilerPlugin("org.typelevel" %% "kind-projector" % Version.kindProjector)

@@ -1,6 +1,5 @@
 package log
 
-import zio.test.FailureRenderer.FailureMessage.Message
 import zio.{Has, UIO}
 
 object Logger {
