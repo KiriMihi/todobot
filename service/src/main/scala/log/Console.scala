@@ -3,8 +3,10 @@ import zio.UIO
 import zio.clock._
 import zio.console.{Console => ConsoleZIO}
 
-private[log] final case class Console(clock: Clock.Service, console: ConsoleZIO.Service)
-    extends Logger.Service {
+private[log] final case class Console(
+    clock: Clock.Service,
+    console: ConsoleZIO.Service
+) extends Logger.Service {
   override def trace(message: => String): UIO[Unit] = print(message)
 
   override def debug(message: => String): UIO[Unit] = print(message)

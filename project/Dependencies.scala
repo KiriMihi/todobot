@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
   val zio = "dev.zio" %% "zio" % Version.zio
   val zioCats = ("dev.zio" %% "zio-interop-cats" % Version.zioCats).excludeAll(ExclusionRule("dev.zio"))
+  val zioMacros = "dev.zio" %% "zio-macros-access" % Version.zioMacros
   val zioTest = "dev.zio" %% "zio-test"     % Version.zio % "test"
   val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zio % "test"
 
@@ -30,6 +31,7 @@ object Dependencies {
 object Version {
   val zio = "1.0.0-RC18-2"
   val zioCats = "2.0.0.0-RC12"
+  val zioMacros = "0.4.0"
   val slf4j = "1.7.28"
   val fs2Core = "2.2.1"
   val kindProjector = "0.10.3"

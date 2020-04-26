@@ -1,13 +1,19 @@
 import Config.DbConfig
-import PageError.{ConfigurationError, MissingBotToken}
 import canoe.api.{TelegramClient => CanoeClient}
 import cats.effect.{Blocker, Resource}
 import cats.syntax.either._
+import chat.ChatStorage
 import doobie.hikari.HikariTransactor
+import doobie.util.transactor.Transactor
+import log.Logger
+import org.http4s.blaze.http.HttpClient
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 import pureconfig._
 import pureconfig.generic.auto._
+import telegram.{CanoeScenarios, TelegramClient}
+import todo.TodoError.{ConfigurationError, MissingBotToken}
+import todo.TodoLogic
 import zio._
 import zio.blocking.Blocking
 import zio.console.putStrLn
@@ -21,9 +27,9 @@ object Main extends zio.App {
     val program = for {
       token <- telegramBotToken orElse UIO.succeed("")
       config <- readConfig
-      http4sClient <- makeHttpClient
+      //http4sClient <- makeHttpClient
       canoeClient <- makeCanoeClient(token)
-      // transactor <- makeTransactor(config)
+      transactor <- makeTransactor(config.relaseConfig.dbConfig)
 
     } yield ()
 
@@ -33,13 +39,34 @@ object Main extends zio.App {
     )
   }
 
-  // TODO: move to a separate class
-  final case class BackendConfig(connectionString: String)
+  private def makeProgram(
+      http4sClient: TaskManaged[Client[Task]],
+      canoeClient: TaskManaged[CanoeClient[Task]],
+      transactor: RManaged[Blocking, Transactor[Task]]
+  ): RIO[ZEnv, Int] = {
+    val loggerLayer = Logger.console
+    val transactorLayer = transactor.toLayer.orDie
+    val chatStorageLayer = transactorLayer >>> ChatStorage.doobie
+
+    val storageLayer = chatStorageLayer
+    val todoLogicLayer = (loggerLayer ++ storageLayer) >>> TodoLogic.live
+    //val http4sClientLayer = http4sClient.toLayer.orDie
+    //val httpClientLayer = http4sClientLayer >>> HttpClient.http
+    val canoeClientLayer = canoeClient.toLayer.orDie
+    val canoeScenarioLayer =
+      (canoeClientLayer ++ todoLogicLayer) >>> CanoeScenarios.live
+    val telegramClientlayer =
+      (loggerLayer ++ canoeClientLayer ++ canoeScenarioLayer) >>> TelegramClient.canoe
+    val startTelegramClientLayer = TelegramClient.start
+    val programLayer = telegramClientlayer
+    val program = startTelegramClientLayer.fork
+    program.provideSomeLayer[ZEnv](programLayer)
+  }
 
   private def readConfig =
     ZIO.fromEither {
       ConfigSource.default
-        .load[BackendConfig]
+        .load[Config]
         .leftMap(errors => ConfigurationError(errors.prettyPrint()))
     }
 
@@ -66,13 +93,17 @@ object Main extends zio.App {
 
     ZIO.runtime[Blocking].map { implicit rt =>
       for {
-        transactEC <- ZIO.access[Blocking](_.get.blockingExecutor.asEC).toManaged_
-        transactor <- transactor(rt.platform.executor.asEC, transactEC).toManaged
+        transactEC <-
+          ZIO.access[Blocking](_.get.blockingExecutor.asEC).toManaged_
+        transactor <-
+          transactor(rt.platform.executor.asEC, transactEC).toManaged
       } yield transactor
     }
   }
 
-  private def makeCanoeClient(token: String): UIO[TaskManaged[CanoeClient[Task]]] =
+  private def makeCanoeClient(
+      token: String
+  ): UIO[TaskManaged[CanoeClient[Task]]] =
     ZIO.runtime[Any].map { implicit rts => CanoeClient.global(token).toManaged }
 
   private def telegramBotToken: RIO[system.System, String] =

@@ -1,3 +1,3 @@
-package todo.client
+package todo
 
 final case class ChatID(value: Long)

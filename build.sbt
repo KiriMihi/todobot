@@ -20,9 +20,6 @@ lazy val backend = (project in file("backend"))
   .settings(libraryDependencies ++= backendDependencies)
   .dependsOn(service)
 
-
-
-
 lazy val `kirimihi-todo` = Project("BilToDoBot", file("."))
   .settings(commonSettings)
   .settings(organization := "kirimihi.io")
