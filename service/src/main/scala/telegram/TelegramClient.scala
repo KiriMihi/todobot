@@ -4,8 +4,8 @@ import log.Logger
 import log.Logger._
 import telegram.CanoeScenarios.CanoeScenarious
 import todo.ChatID
-import zio._
-import zio.macros.access.accessible
+import zio.macros.accessible
+import zio.{Has, Task, URLayer, ZLayer}
 
 @accessible
 object TelegramClient {
@@ -16,9 +16,9 @@ object TelegramClient {
     def broadcastMessage(receivers: Set[ChatID], mesaage: String): Task[Unit]
   }
 
-  type CanoeDeps = Has[Client[Task]] with Logger with CanoeScenarious
+  type Canoe = Has[Client[Task]] with Logger with CanoeScenarious
 
-  def canoe: URLayer[CanoeDeps, Has[Service]] =
+  def canoe: URLayer[Canoe, Has[Service]] =
     ZLayer.fromServices[Client[
       Task
     ], Logger.Service, CanoeScenarios.Service, Service] {

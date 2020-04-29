@@ -27,10 +27,11 @@ object Main extends zio.App {
     val program = for {
       token <- telegramBotToken orElse UIO.succeed("")
       config <- readConfig
-      //http4sClient <- makeHttpClient
+      _ <- FlyWayMigration.migrate(config.relaseConfig.dbConfig)
       canoeClient <- makeCanoeClient(token)
       transactor <- makeTransactor(config.relaseConfig.dbConfig)
-
+      http4SClient <- makeHttpClient
+      _ <- makeProgram(http4SClient, canoeClient, transactor)
     } yield ()
 
     program.foldM(
@@ -39,26 +40,37 @@ object Main extends zio.App {
     )
   }
 
+  private def makeHttpClient: UIO[TaskManaged[Client[Task]]] =
+    ZIO
+      .runtime[Any]
+      .map { implicit rts =>
+        BlazeClientBuilder
+          .apply[Task](Implicits.global)
+          .resource
+          .toManaged
+      }
+
   private def makeProgram(
       http4sClient: TaskManaged[Client[Task]],
       canoeClient: TaskManaged[CanoeClient[Task]],
       transactor: RManaged[Blocking, Transactor[Task]]
-  ): RIO[ZEnv, Int] = {
+  ): ZIO[ZEnv, Nothing, zio.Fiber.Runtime[Throwable, Unit]] = {
     val loggerLayer = Logger.console
     val transactorLayer = transactor.toLayer.orDie
     val chatStorageLayer = transactorLayer >>> ChatStorage.doobie
 
     val storageLayer = chatStorageLayer
     val todoLogicLayer = (loggerLayer ++ storageLayer) >>> TodoLogic.live
-    //val http4sClientLayer = http4sClient.toLayer.orDie
-    //val httpClientLayer = http4sClientLayer >>> HttpClient.http
+    val http4sClientLayer = http4sClient.toLayer.orDie
+    val httpClientLayer = http4sClientLayer
     val canoeClientLayer = canoeClient.toLayer.orDie
     val canoeScenarioLayer =
       (canoeClientLayer ++ todoLogicLayer) >>> CanoeScenarios.live
     val telegramClientlayer =
       (loggerLayer ++ canoeClientLayer ++ canoeScenarioLayer) >>> TelegramClient.canoe
     val startTelegramClientLayer = TelegramClient.start
-    val programLayer = telegramClientlayer
+    val programLayer = httpClientLayer ++ telegramClientlayer
+    println(programLayer.getClass)
     val program = startTelegramClientLayer.fork
     program.provideSomeLayer[ZEnv](programLayer)
   }
@@ -68,11 +80,6 @@ object Main extends zio.App {
       ConfigSource.default
         .load[Config]
         .leftMap(errors => ConfigurationError(errors.prettyPrint()))
-    }
-
-  private def makeHttpClient: UIO[TaskManaged[Client[Task]]] =
-    ZIO.runtime[Any].map { implicit rts =>
-      BlazeClientBuilder.apply(Implicits.global).resource.toManaged
     }
 
   private def makeTransactor(

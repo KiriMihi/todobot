@@ -1,8 +1,9 @@
 package telegram
 
 import canoe.api.Scenario
-import zio.{Has, Task, URLayer, ZLayer}
+import zio.{Has, Task, ULayer, URLayer, ZLayer}
 import canoe.api.{TelegramClient => Client, _}
+import canoe.models.ChatId
 import chat.ChatStorage
 import chat.ChatStorage.ChatStorage
 import log.Logger

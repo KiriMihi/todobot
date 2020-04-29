@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
   val zio = "dev.zio" %% "zio" % Version.zio
   val zioCats = ("dev.zio" %% "zio-interop-cats" % Version.zioCats).excludeAll(ExclusionRule("dev.zio"))
-  val zioMacros = "dev.zio" %% "zio-macros-access" % Version.zioMacros
+  val zioMacros = "dev.zio" %% "zio-macros" % "1.0.0-RC18-2+119-559be413-SNAPSHOT"
   val zioTest = "dev.zio" %% "zio-test"     % Version.zio % "test"
   val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zio % "test"
 
@@ -22,6 +22,8 @@ object Dependencies {
   val circeParser = "io.circe" %% "circe-parser" % Version.circe
   val circeExtras = "io.circe" %% "circe-generic-extras" % Version.circeExtras
   val circe = List(circeGeneric, circeCore, circeParser, circeExtras)
+  val slf4j = "org.slf4j" % "slf4j-simple" % Version.slf4j
+
 
   val canoe = "org.augustjune" %% "canoe" % Version.canoe
 
