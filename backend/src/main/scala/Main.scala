@@ -1,23 +1,22 @@
 import Config.DbConfig
-import canoe.api.{TelegramClient => CanoeClient}
-import cats.effect.{Blocker, Resource}
 import cats.syntax.either._
 import chat.ChatStorage
+import log.Logger
+import canoe.api.{TelegramClient => CanoeClient}
+import cats.effect.{Blocker, Resource}
 import doobie.hikari.HikariTransactor
 import doobie.util.transactor.Transactor
-import log.Logger
-import org.http4s.blaze.http.HttpClient
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
-import pureconfig._
-import pureconfig.generic.auto._
 import telegram.{CanoeScenarios, TelegramClient}
 import todo.TodoError.{ConfigurationError, MissingBotToken}
 import todo.TodoLogic
+import org.http4s.client.Client
+import org.http4s.client.blaze.BlazeClientBuilder
+import pureconfig.ConfigSource
 import zio._
 import zio.blocking.Blocking
 import zio.console.putStrLn
 import zio.interop.catz._
+import pureconfig.generic.auto._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits
@@ -54,7 +53,7 @@ object Main extends zio.App {
       http4sClient: TaskManaged[Client[Task]],
       canoeClient: TaskManaged[CanoeClient[Task]],
       transactor: RManaged[Blocking, Transactor[Task]]
-  ): ZIO[ZEnv, Nothing, zio.Fiber.Runtime[Throwable, Unit]] = {
+  ): ZIO[ZEnv, Throwable, Unit] = {
     val loggerLayer = Logger.console
     val transactorLayer = transactor.toLayer.orDie
     val chatStorageLayer = transactorLayer >>> ChatStorage.doobie
@@ -65,13 +64,13 @@ object Main extends zio.App {
     val httpClientLayer = http4sClientLayer
     val canoeClientLayer = canoeClient.toLayer.orDie
     val canoeScenarioLayer =
-      (canoeClientLayer ++ todoLogicLayer) >>> CanoeScenarios.live
+      (canoeClientLayer ++ http4sClientLayer ++ todoLogicLayer) >>> CanoeScenarios.live
     val telegramClientlayer =
       (loggerLayer ++ canoeClientLayer ++ canoeScenarioLayer) >>> TelegramClient.canoe
     val startTelegramClientLayer = TelegramClient.start
     val programLayer = httpClientLayer ++ telegramClientlayer
     println(programLayer.getClass)
-    val program = startTelegramClientLayer.fork
+    val program = startTelegramClientLayer
     program.provideSomeLayer[ZEnv](programLayer)
   }
 
