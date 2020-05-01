@@ -24,7 +24,9 @@ import scala.concurrent.ExecutionContext.Implicits
 object Main extends zio.App {
   override def run(args: List[String]): ZIO[ZEnv, Nothing, Int] = {
     val program = for {
-      token <- telegramBotToken orElse UIO.succeed("")
+      token <- telegramBotToken orElse UIO.succeed(
+        "161884916:AAGU6zIvypHDp8vkW_QJEO7MlGkQVpF4kuI"
+      )
       config <- readConfig
       _ <- FlyWayMigration.migrate(config.relaseConfig.dbConfig)
       canoeClient <- makeCanoeClient(token)
@@ -114,7 +116,7 @@ object Main extends zio.App {
 
   private def telegramBotToken: RIO[system.System, String] =
     for {
-      token <- system.env("")
+      token <- system.env("161884916:AAGU6zIvypHDp8vkW_QJEO7MlGkQVpF4kuI")
       token <- ZIO.fromOption(token).mapError(_ => MissingBotToken)
     } yield token
 

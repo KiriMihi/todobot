@@ -6,7 +6,7 @@ import todo.Repository.Name
 import Repository.Name
 import TodoTask.TaskID
 
-final case class TodoTask(id: TaskID, chatID: ChatID, name: Name) {}
+final case class TodoTask(id: TaskID, chatID: ChatID, taskName: Name)
 
 object TodoTask {
   final case class TaskID(value: String)
