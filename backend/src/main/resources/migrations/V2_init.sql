@@ -1,0 +1,1 @@
+ALTER TABLE Task ADD Ordering Int

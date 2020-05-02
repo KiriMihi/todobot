@@ -3,13 +3,9 @@ package telegram
 import canoe.api.Scenario
 import zio.{Has, Task, ULayer, URLayer, ZLayer}
 import canoe.api.{TelegramClient => Client, _}
-import canoe.models.ChatId
-import chat.ChatStorage
-import chat.ChatStorage.ChatStorage
-import log.Logger
 import todo.TodoLogic
 import todo.TodoLogic.TodoLogic
-import telegram.Live
+
 
 object CanoeScenarios {
   type CanoeScenarious = Has[Service]
@@ -20,6 +16,7 @@ object CanoeScenarios {
     def add: Scenario[Task, Unit]
     def del: Scenario[Task, Unit]
     def list: Scenario[Task, Unit]
+    def update: Scenario[Task, Unit]
   }
 
   type LiveDeps = Has[Client[Task]] with TodoLogic

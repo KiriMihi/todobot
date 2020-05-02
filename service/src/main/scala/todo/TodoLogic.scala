@@ -9,10 +9,15 @@ object TodoLogic {
   type TodoLogic = Has[Service]
 
   trait Service {
-    def add(chatID: ChatID, name: Name): Task[Unit]
+    def add(chatID: ChatID, name: Name, numberOfTask: NumberOfTask): Task[Unit]
     def remove(chatID: ChatID, numberOfTask: NumberOfTask): Task[Unit]
     def listTasks(chatID: ChatID): Task[Set[TodoTask]]
-    def hasTaskExist(numberOfTask: NumberOfTask): IO[TodoError, TodoTask]
+    def count(chatID: ChatID): Task[Int]
+    def update(
+        chatId: ChatID,
+        numberOfTask: NumberOfTask,
+        name: Name
+    ): Task[Unit]
   }
 
   type LiveDeps = Logger with ChatStorage
