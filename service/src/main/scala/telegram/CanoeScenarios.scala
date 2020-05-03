@@ -6,7 +6,6 @@ import canoe.api.{TelegramClient => Client, _}
 import todo.TodoLogic
 import todo.TodoLogic.TodoLogic
 
-
 object CanoeScenarios {
   type CanoeScenarious = Has[Service]
 
@@ -17,6 +16,7 @@ object CanoeScenarios {
     def del: Scenario[Task, Unit]
     def list: Scenario[Task, Unit]
     def update: Scenario[Task, Unit]
+    def alltasks: Scenario[Task, Unit]
   }
 
   type LiveDeps = Has[Client[Task]] with TodoLogic
@@ -24,5 +24,4 @@ object CanoeScenarios {
     ZLayer.fromServices[Client[Task], TodoLogic.Service, Service] {
       (client, todoLogic) => Live(todoLogic, client)
     }
-
 }

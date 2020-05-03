@@ -1,9 +1,8 @@
 package telegram
 
-import canoe.api.{Scenario, TelegramClient}
-import todo.{ChatID, NumberOfTask, TodoLogic}
+import canoe.api.{Scenario, TelegramClient, _}
+import todo.{ChatID, NumberOfTask, TodoLogic, UserID}
 import zio.{Task, ZIO}
-import canoe.api._
 import canoe.models.Chat
 import canoe.models.messages.TextMessage
 import canoe.syntax._
@@ -39,60 +38,76 @@ private[telegram] final case class Live(
 
   override def add: Scenario[Task, Unit] =
     for {
-      chat <- Scenario.expect(command("add").chat)
-      _ <- Scenario.eval(chat.send("Please add your task"))
+      info <- Scenario.expect(command("add"))
+      _ <- Scenario.eval(info.chat.send("Please add your task"))
       userInput <- Scenario.expect(text)
-      lastNumberOfTask <- Scenario.eval(todoLogic.count(ChatID(chat.id)))
+      lastNumberOfTask <- Scenario.eval(todoLogic.count(ChatID(info.chat.id)))
       _ <- Scenario.eval(
-        chat.send("task is added") *> todoLogic
+        info.chat.send("task is added") *> todoLogic
           .add(
-            ChatID(chat.id),
+            ChatID(info.chat.id),
             Name(userInput),
-            NumberOfTask(lastNumberOfTask + 1)
+            NumberOfTask(lastNumberOfTask + 1),
+            UserID(info.from.get.id)
           )
       )
     } yield ()
 
   override def del: Scenario[Task, Unit] =
     for {
-      chat <- Scenario.expect(command("del").chat)
-      _ <-
-        Scenario.eval(chat.send("Please write number of your task to delete"))
-      result <- ifExists(chat)
+      info <- Scenario.expect(command("del"))
       _ <- Scenario.eval(
-        chat.send("Removing your task") *> todoLogic
-          .remove(ChatID(chat.id), NumberOfTask(result._2))
+        info.chat.send("Please write number of your task to delete")
+      )
+      result <- ifExists(info.chat)
+      _ <- Scenario.eval(
+        info.chat.send("Removing your task") *> todoLogic
+          .remove(
+            ChatID(info.chat.id),
+            NumberOfTask(result._2),
+            UserID(info.from.get.id)
+          )
       )
     } yield ()
 
   override def list: Scenario[Task, Unit] =
     for {
-      chat <- Scenario.expect(command("list").chat)
-      tasks <- Scenario.eval(todoLogic.listTasks(ChatID(chat.id)))
+      info <- Scenario.expect(command("list"))
+      tasks <- Scenario.eval(
+        todoLogic.listUserTasks(ChatID(info.chat.id), UserID(info.from.get.id))
+      )
       _ <- {
         val result =
-          if (tasks.isEmpty) chat.send("You don't tasks set")
-          else
-            chat.send("Listing your tasks") *> ZIO.foreach(tasks)(task =>
-              chat.send(
+          if (tasks.isEmpty) info.chat.send("You don't tasks set")
+          else {
+            //val listTasks = ZIO.foreach(tasks)(task => task.taskName.value)
+            info.chat.send("Listing your tasks") *> ZIO.foreach(tasks)(task =>
+              info.chat.send(
                 task.ordering.value.toString + " - " + task.taskName.value
               )
             )
+          }
         Scenario.eval(result)
       }
     } yield ()
 
   override def update: Scenario[Task, Unit] =
     for {
-      chat <- Scenario.expect(command("update").chat)
-      _ <-
-        Scenario.eval(chat.send("Please write number of your task to update"))
-      result <- ifExists(chat)
-      _ <- Scenario.eval(chat.send("Please write a new name of the task"))
+      info <- Scenario.expect(command("update"))
+      _ <- Scenario.eval(
+        info.chat.send("Please write number of your task to update")
+      )
+      result <- ifExists(info.chat)
+      _ <- Scenario.eval(info.chat.send("Please write a new name of the task"))
       secondInput <- enterText()
       _ <- Scenario.eval(
-        chat.send("Updating your task") *> todoLogic
-          .update(ChatID(chat.id), NumberOfTask(result._2), Name(secondInput))
+        info.chat.send("Updating your task") *> todoLogic
+          .update(
+            ChatID(info.chat.id),
+            NumberOfTask(result._2),
+            Name(secondInput),
+            UserID(info.from.get.id)
+          )
       )
     } yield ()
 
@@ -136,4 +151,18 @@ private[telegram] final case class Live(
       message <- Scenario.expect(textMessage)
     } yield message.text
 
+  override def alltasks: Scenario[Task, Unit] =
+    for {
+      chat <- Scenario.expect(command("alltasks").chat)
+      tasks <- Scenario.eval(todoLogic.listTasks(ChatID(chat.id)))
+      _ <- {
+        val result =
+          if (tasks.isEmpty) chat.send("You don't tasks set")
+          else
+            chat.send("Listing all tasks") *> ZIO.foreach(tasks)(task =>
+              chat.send(task.taskName.value)
+            )
+        Scenario.eval(result)
+      }
+    } yield ()
 }

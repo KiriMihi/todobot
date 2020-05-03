@@ -13,14 +13,19 @@ private[todo] final case class Live(
   override def add(
       chatID: ChatID,
       name: Name,
-      numberOfTask: NumberOfTask
+      numberOfTask: NumberOfTask,
+      userID: UserID
   ): Task[Unit] =
     logger.info(s"$chatID added to ${name.value} ") *>
-      chatStorage.add(chatID, name, numberOfTask)
+      chatStorage.add(chatID, name, numberOfTask, userID)
 
-  override def remove(chatID: ChatID, numberOfTask: NumberOfTask): Task[Unit] =
-    logger.info(s"Chat $chatID removed ${numberOfTask}") *>
-      chatStorage.remove(chatID, numberOfTask)
+  override def remove(
+      chatID: ChatID,
+      numberOfTask: NumberOfTask,
+      userID: UserID
+  ): Task[Unit] =
+    logger.info(s"Chat $chatID removed ${numberOfTask} for userID: $userID") *>
+      chatStorage.remove(chatID, numberOfTask, userID)
 
   override def listTasks(chatID: ChatID): Task[Set[TodoTask]] =
     logger.info(s"ChatId $chatID requested tasks") *>
@@ -33,11 +38,21 @@ private[todo] final case class Live(
   override def update(
       chatId: ChatID,
       numberOfTask: NumberOfTask,
-      name: Name
+      name: Name,
+      userID: UserID
   ): Task[Unit] =
     logger.info(s"ChatId $chatId requested to update") *> chatStorage.update(
       chatId,
       name,
-      numberOfTask
+      numberOfTask,
+      userID
     )
+
+  override def listUserTasks(
+      chatID: ChatID,
+      userID: UserID
+  ): Task[Set[TodoTask]] =
+    logger.info(s"ChatId $chatID requested tasks for $userID") *> chatStorage
+      .listUserTasks(chatID, userID)
+
 }

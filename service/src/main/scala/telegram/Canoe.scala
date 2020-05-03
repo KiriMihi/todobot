@@ -28,7 +28,8 @@ private[telegram] final case class Canoe(
           canoeScenarios.help,
           canoeScenarios.start,
           canoeScenarios.list,
-          canoeScenarios.update
+          canoeScenarios.update,
+          canoeScenarios.alltasks
         )
         .compile
         .drain

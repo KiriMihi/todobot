@@ -3,7 +3,7 @@ package chat
 import doobie.util.transactor.Transactor
 import todo.Repository.Name
 import chat.Doobie
-import todo.{ChatID, NumberOfTask, TodoTask}
+import todo.{ChatID, NumberOfTask, TodoTask, UserID}
 import zio.{Has, Ref, Task, ZLayer}
 
 object ChatStorage {
@@ -12,9 +12,19 @@ object ChatStorage {
   type TodoMap = Map[ChatID, Set[Name]]
 
   trait Service {
-    def add(chatID: ChatID, name: Name, numberOfTask: NumberOfTask): Task[Unit]
-    def remove(chatID: ChatID, numberOfTask: NumberOfTask): Task[Unit]
+    def add(
+        chatID: ChatID,
+        name: Name,
+        numberOfTask: NumberOfTask,
+        userID: UserID
+    ): Task[Unit]
+    def remove(
+        chatID: ChatID,
+        numberOfTask: NumberOfTask,
+        userID: UserID
+    ): Task[Unit]
     def listTasks(chatID: ChatID): Task[Set[TodoTask]]
+    def listUserTasks(chatID: ChatID, userID: UserID): Task[Set[TodoTask]]
     def hasTaskExist(
         chatID: ChatID,
         numberOfTask: NumberOfTask
@@ -24,7 +34,8 @@ object ChatStorage {
     def update(
         chatID: ChatID,
         name: Name,
-        numberOfTask: NumberOfTask
+        numberOfTask: NumberOfTask,
+        userID: UserID
     ): Task[Unit]
 
   }
