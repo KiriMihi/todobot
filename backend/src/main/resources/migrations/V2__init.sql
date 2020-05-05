@@ -1,0 +1,2 @@
+ALTER TABLE Task ADD Ordering Int;
+ALTER TABLE Task ADD UserID Int;

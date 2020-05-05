@@ -30,8 +30,9 @@ private[telegram] final case class Live(
       """|/help Shows help menu
         |/add Add task
         |/del Remove task
-        |/list List of all tasks
+        |/list List of user tasks
         |/update Update task
+        |/alltasks List of all tasks
         """.stripMargin
     Scenario.eval(chat.send(helpText))
   }
@@ -61,7 +62,7 @@ private[telegram] final case class Live(
       )
       result <- ifExists(info.chat)
       _ <- Scenario.eval(
-        info.chat.send("Removing your task") *> todoLogic
+        info.chat.send("your task is removed") *> todoLogic
           .remove(
             ChatID(info.chat.id),
             NumberOfTask(result._2),
@@ -80,12 +81,14 @@ private[telegram] final case class Live(
         val result =
           if (tasks.isEmpty) info.chat.send("You don't tasks set")
           else {
-            //val listTasks = ZIO.foreach(tasks)(task => task.taskName.value)
-            info.chat.send("Listing your tasks") *> ZIO.foreach(tasks)(task =>
+            info.chat.send("Listing your tasks") *>
               info.chat.send(
-                task.ordering.value.toString + " - " + task.taskName.value
+                tasks
+                  .map(x =>
+                    s"${x.ordering.value.toString} -  ${x.taskName.value}"
+                  )
+                  .mkString("\n")
               )
-            )
           }
         Scenario.eval(result)
       }
@@ -101,7 +104,7 @@ private[telegram] final case class Live(
       _ <- Scenario.eval(info.chat.send("Please write a new name of the task"))
       secondInput <- enterText()
       _ <- Scenario.eval(
-        info.chat.send("Updating your task") *> todoLogic
+        info.chat.send("your task is updated") *> todoLogic
           .update(
             ChatID(info.chat.id),
             NumberOfTask(result._2),
@@ -159,9 +162,12 @@ private[telegram] final case class Live(
         val result =
           if (tasks.isEmpty) chat.send("You don't tasks set")
           else
-            chat.send("Listing all tasks") *> ZIO.foreach(tasks)(task =>
-              chat.send(task.taskName.value)
-            )
+            chat.send("Listing all tasks") *>
+              chat.send(
+                tasks
+                  .map(x => s"${x.taskName.value}")
+                  .mkString("\n")
+              )
         Scenario.eval(result)
       }
     } yield ()

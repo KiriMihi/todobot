@@ -6,9 +6,12 @@ import log.Logger.Logger
 import canoe.api.{Bot, TelegramClient => Client}
 import canoe.models.PrivateChat
 import canoe.models.outgoing.TextContent
+import cats.effect.ExitCode
 import todo.ChatID
 import zio.{Task, ZIO}
 import zio.interop.catz._
+import scala.concurrent.duration._
+import zio.interop.catz.implicits._
 
 private[telegram] final case class Canoe(
     logger: Logger.Service,
@@ -31,6 +34,7 @@ private[telegram] final case class Canoe(
           canoeScenarios.update,
           canoeScenarios.alltasks
         )
+        .metered(1.seconds)
         .compile
         .drain
 
